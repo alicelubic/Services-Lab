@@ -39,56 +39,75 @@ public class MusicService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        mHandlerThread = new HandlerThread("thread");
-        mHandlerThread.start();
-        Looper looper = mHandlerThread.getLooper();
+        mPlayer = null;
+//
+//        mHandlerThread = new HandlerThread("thread");
+//        mHandlerThread.start();
+//        Looper looper = mHandlerThread.getLooper();
+//
+//        mHandler = new Handler(looper) {
+//
+//            @Override
+//            public void handleMessage(Message msg) {
+//                super.handleMessage(msg);
+//                mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
-        mHandler = new Handler(looper) {
-
-            @Override
-            public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-                mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-
-                if (!mPlayer.isPlaying()) {
-                    try {
-                        mPlayer.setDataSource(SONG_URL);
-                        Log.i(TAG, "handleMessage: set data source");
-                        mPlayer.prepare();
-                        mPlayer.start();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-
-            }
-
-        };
+//
+//                if (!mPlayer.isPlaying()) {
+//                    try {
+//                        mPlayer.setDataSource(SONG_URL);
+//                        Log.i(TAG, "handleMessage: set data source");
+//                        mPlayer.prepare();
+//                        mPlayer.start();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                }
 
 
     }
 
+    ;
+
+
+
+
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+       if(mPlayer == null) {
+           mPlayer = new MediaPlayer();
+           mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+           try {
+               mPlayer.setDataSource(SONG_URL);
+               mPlayer.prepare();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
 
 
-        if (!mPlayer.isPlaying()) {
-            mPlayer.start();
-        } else {
-            mPlayer.pause();
-        }
-        Message msg = mHandler.obtainMessage();
+           mPlayer.start();
+       } else {
+            //   mPlayer.pause();
+           playSong();
+           }
+         //  Message msg = mHandler.obtainMessage();
 
 
-        Log.i(TAG, "onStartCommand: handler obtained message");
-        mHandler.sendMessage(msg);
+           Log.i(TAG, "onStartCommand: handler obtained message");
+        //   mHandler.sendMessage(msg);
 
         return START_NOT_STICKY;
 
     }
 
+
+    public static void playSong(){
+        if(!mPlayer.isPlaying())
+        mPlayer.start();
+    }
 
     public static void pauseSong() {
         mPlayer.pause();
@@ -103,6 +122,8 @@ public class MusicService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        stopSong();
+        stopSelf();
     }
 }
+
+
