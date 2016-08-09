@@ -2,6 +2,7 @@ package com.example.owlslubic.hotify.services;
 
 import android.app.Service;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -15,15 +16,17 @@ import android.util.Log;
 import com.example.owlslubic.hotify.MainActivity;
 import com.example.owlslubic.hotify.R;
 
+import java.io.IOException;
+
 /**
  * Created by owlslubic on 8/8/16.
  */
 public class MusicService extends Service {
-    private static final String TAG = "MusicService" ;
-    private HandlerThread mHandlerThread;
-    private Handler mHandler;
-    private MediaPlayer mPlayer = null;
-    private static final String ACTION_PLAY = "com.example.owlslubic.hotify.action.PLAY";
+    private static final String TAG = "MusicService";
+    public static MediaPlayer mPlayer = new MediaPlayer();
+    HandlerThread mHandlerThread;
+    Handler mHandler;
+    private static final String SONG_URL = "http://www.singing-bell.com/wp-content/uploads/2015/02/Mexican-Hat-Dance-Singing-Bell.mp3";
 
 
     @Nullable
@@ -35,71 +38,71 @@ public class MusicService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mPlayer = MediaPlayer.create(getApplicationContext(), R.raw.lo_dudo);
+
+        mHandlerThread = new HandlerThread("thread");
+        mHandlerThread.start();
+        Looper looper = mHandlerThread.getLooper();
+
+        mHandler = new Handler(looper) {
+
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
 
+                if (!mPlayer.isPlaying()) {
+                    try {
+                        mPlayer.setDataSource(SONG_URL);
+                        Log.i(TAG, "handleMessage: set data source");
+                        mPlayer.prepare();
+                        mPlayer.start();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
-        
-//        mHandlerThread = new HandlerThread("Music Player Thread");
-//        mHandlerThread.start();
-//        Looper looper = mHandlerThread.getLooper();
-//
-//        mHandler = new Handler(looper){
-//            @Override
-//            public void handleMessage(Message msg) {
-//                super.handleMessage(msg);
-//                Log.i(TAG, "handleMessage: The Handler is doing somethin'");
-//
-////                String mediaPlayback = (String) msg.obj;
-////                switch (mediaPlayback){
-////                    case "play":
-////                        mPlayer.start();
-////                        Log.i(TAG, "onStartCommand: player plays");
-////                        break;
-////                    case "pause":
-////                        mPlayer.pause();
-////                        Log.i(TAG, "onStartCommand: player paused");
-////                        break;
-////                    case "stop":
-////                        mPlayer.stop();
-////                        Log.i(TAG, "onStartCommand: player stopped");
-////                        break;
-////                    default:
-////                        mPlayer.pause();
-////                }
-//            }
-//        };
+                }
+
+            }
+
+        };
+
 
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Message msg = mHandler.obtainMessage();
-        Log.i(TAG, "onStartCommand: handler obtained message");
-        msg.obj = intent.getStringExtra(MainActivity.PLAYBACK_KEY);
-        mHandler.sendMessage(msg);
-        String mediaPlayback = (String) msg.obj;
-        switch (mediaPlayback){
-            case "play":
-                mPlayer.start();
-                Log.i(TAG, "onStartCommand: player plays");
-                break;
-            case "pause":
-                mPlayer.pause();
-                Log.i(TAG, "onStartCommand: player paused");
-                break;
-            case "stop":
-                mPlayer.stop();
-                Log.i(TAG, "onStartCommand: player stopped");
-                break;
-            default:
-                mPlayer.start();
+
+
+        if (!mPlayer.isPlaying()) {
+            mPlayer.start();
+        } else {
+            mPlayer.pause();
         }
+        Message msg = mHandler.obtainMessage();
 
 
-    return START_STICKY;
+        Log.i(TAG, "onStartCommand: handler obtained message");
+        mHandler.sendMessage(msg);
+
+        return START_NOT_STICKY;
 
     }
 
 
+    public static void pauseSong() {
+        mPlayer.pause();
+    }
+
+    public static void stopSong() {
+        mPlayer.stop();
+    }
+
+
+    //not sure about this part
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        stopSong();
+    }
 }
